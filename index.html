@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger — a to-do list</title>
+<style>
+  :root{
+    --paper:#F6F3EC;
+    --ink:#23241F;
+    --ink-faint:#8B8A7F;
+    --line:#D9D4C4;
+    --accent:#A23E2A;
+    --accent-soft:#E8D9C8;
+    --done:#6E7C5A;
+    --font-display:'Iowan Old Style','Palatino Linotype',Georgia,serif;
+    --font-mono:'JetBrains Mono','SF Mono',Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:var(--paper);
+    background-image:
+      repeating-linear-gradient(transparent, transparent 38px, var(--line) 39px);
+    background-position: 0 96px;
+    color:var(--ink);
+    font-family:var(--font-mono);
+    font-size:15px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .sheet{
+    max-width:640px;
+    margin:0 auto;
+    padding:48px 32px 80px;
+  }
+  header{
+    margin-bottom:28px;
+  }
+  .kicker{
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--accent);
+    font-weight:600;
+  }
+  h1{
+    font-family:var(--font-display);
+    font-size:42px;
+    font-weight:600;
+    margin:6px 0 4px;
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    color:var(--ink-faint);
+    font-size:13px;
+  }
+  .meta-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-top:18px;
+    padding-top:12px;
+    border-top:1px solid var(--line);
+    font-size:12px;
+    color:var(--ink-faint);
+  }
+  .meta-row strong{
+    color:var(--ink);
+    font-weight:600;
+  }
+
+  form{
+    display:flex;
+    gap:0;
+    margin:28px 0 8px;
+    border:1px solid var(--ink);
+    background:#fff;
+  }
+  form input{
+    flex:1;
+    border:none;
+    outline:none;
+    padding:14px 16px;
+    font-family:var(--font-mono);
+    font-size:14px;
+    background:transparent;
+    color:var(--ink);
+  }
+  form input::placeholder{ color:var(--ink-faint); }
+  form button{
+    border:none;
+    border-left:1px solid var(--ink);
+    background:var(--accent);
+    color:#fff;
+    padding:0 22px;
+    font-family:var(--font-mono);
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    font-weight:600;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  form button:hover{ background:#86311f; }
+
+  .filters{
+    display:flex;
+    gap:14px;
+    margin:18px 0 22px;
+  }
+  .filters button{
+    border:none;
+    background:none;
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    cursor:pointer;
+    padding:4px 0;
+    border-bottom:2px solid transparent;
+  }
+  .filters button.active{
+    color:var(--ink);
+    border-bottom-color:var(--accent);
+  }
+
+  ul#list{
+    list-style:none;
+    margin:0;
+    padding:0;
+  }
+  li.item{
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+    padding:13px 2px;
+    border-bottom:1px solid var(--line);
+  }
+  li.item .num{
+    font-size:11px;
+    color:var(--ink-faint);
+    width:24px;
+    padding-top:2px;
+    flex-shrink:0;
+    text-align:right;
+  }
+  .check{
+    appearance:none;
+    -webkit-appearance:none;
+    width:18px;
+    height:18px;
+    border:1.5px solid var(--ink);
+    margin-top:1px;
+    flex-shrink:0;
+    cursor:pointer;
+    position:relative;
+    background:#fff;
+  }
+  .check:checked{
+    background:var(--done);
+    border-color:var(--done);
+  }
+  .check:checked::after{
+    content:"";
+    position:absolute;
+    left:5px; top:1px;
+    width:5px; height:9px;
+    border:solid #fff;
+    border-width:0 2px 2px 0;
+    transform:rotate(45deg);
+  }
+  .text{
+    flex:1;
+    font-size:14.5px;
+    line-height:1.5;
+    word-break:break-word;
+    padding-top:1px;
+  }
+  li.item.done .text{
+    color:var(--ink-faint);
+    text-decoration:line-through;
+    text-decoration-color:var(--ink-faint);
+  }
+  .del{
+    border:none;
+    background:none;
+    color:var(--ink-faint);
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    cursor:pointer;
+    opacity:0;
+    transition:opacity .12s ease, color .12s ease;
+    flex-shrink:0;
+    padding-top:2px;
+  }
+  li.item:hover .del{ opacity:1; }
+  .del:hover{ color:var(--accent); }
+
+  .empty{
+    padding:40px 0;
+    text-align:center;
+    color:var(--ink-faint);
+    font-family:var(--font-display);
+    font-style:italic;
+    font-size:17px;
+  }
+
+  footer{
+    margin-top:36px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+    font-size:11px;
+    color:var(--ink-faint);
+    display:flex;
+    justify-content:space-between;
+  }
+  footer button{
+    border:none;
+    background:none;
+    color:var(--ink-faint);
+    text-decoration:underline;
+    cursor:pointer;
+    font-family:var(--font-mono);
+    font-size:11px;
+  }
+  footer button:hover{ color:var(--accent); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <header>
+      <div class="kicker">Daily Ledger</div>
+      <h1>Things to do</h1>
+      <div class="sub">Entries are kept on this device only.</div>
+      <div class="meta-row">
+        <span><strong id="openCount">0</strong> open</span>
+        <span id="todayDate"></span>
+      </div>
+    </header>
+
+    <form id="addForm">
+      <input id="newItem" type="text" placeholder="Write a new entry…" autocomplete="off" maxlength="200">
+      <button type="submit">Add</button>
+    </form>
+
+    <div class="filters">
+      <button data-filter="all" class="active">All</button>
+      <button data-filter="open">Open</button>
+      <button data-filter="done">Done</button>
+    </div>
+
+    <ul id="list"></ul>
+    <div class="empty" id="emptyState" style="display:none;">The page is blank. Add the first line above.</div>
+
+    <footer>
+      <span id="doneCount">0 completed</span>
+      <button id="clearDone">Clear completed</button>
+    </footer>
+  </div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'ledger.todos.v1';
+  const list = document.getElementById('list');
+  const form = document.getElementById('addForm');
+  const input = document.getElementById('newItem');
+  const emptyState = document.getElementById('emptyState');
+  const openCount = document.getElementById('openCount');
+  const doneCount = document.getElementById('doneCount');
+  const clearDoneBtn = document.getElementById('clearDone');
+  const filterBtns = document.querySelectorAll('.filters button');
+
+  let todos = [];
+  let filter = 'all';
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      todos = raw ? JSON.parse(raw) : [];
+    }catch(e){
+      todos = [];
+    }
+  }
+
+  function save(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    }catch(e){
+      console.error('Could not save to local storage', e);
+    }
+  }
+
+  function render(){
+    list.innerHTML = '';
+    const visible = todos.filter(t=>{
+      if(filter === 'open') return !t.done;
+      if(filter === 'done') return t.done;
+      return true;
+    });
+
+    visible.forEach((t, i) => {
+      const li = document.createElement('li');
+      li.className = 'item' + (t.done ? ' done' : '');
+
+      const num = document.createElement('span');
+      num.className = 'num';
+      num.textContent = String(i+1).padStart(2,'0');
+
+      const check = document.createElement('input');
+      check.type = 'checkbox';
+      check.className = 'check';
+      check.checked = t.done;
+      check.addEventListener('change', () => {
+        t.done = check.checked;
+        save();
+        render();
+      });
+
+      const text = document.createElement('span');
+      text.className = 'text';
+      text.textContent = t.text;
+
+      const del = document.createElement('button');
+      del.className = 'del';
+      del.textContent = 'Remove';
+      del.addEventListener('click', () => {
+        todos = todos.filter(x => x.id !== t.id);
+        save();
+        render();
+      });
+
+      li.appendChild(num);
+      li.appendChild(check);
+      li.appendChild(text);
+      li.appendChild(del);
+      list.appendChild(li);
+    });
+
+    emptyState.style.display = visible.length ? 'none' : 'block';
+    const open = todos.filter(t=>!t.done).length;
+    const done = todos.length - open;
+    openCount.textContent = open;
+    doneCount.textContent = done + ' completed';
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const value = input.value.trim();
+    if(!value) return;
+    todos.unshift({ id: Date.now().toString(36) + Math.random().toString(36).slice(2), text: value, done: false });
+    input.value = '';
+    save();
+    render();
+  });
+
+  clearDoneBtn.addEventListener('click', () => {
+    todos = todos.filter(t => !t.done);
+    save();
+    render();
+  });
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      filter = btn.dataset.filter;
+      render();
+    });
+  });
+
+  document.getElementById('todayDate').textContent = new Date().toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
+
+  load();
+  render();
+})();
+</script>
+</body>
+</html>
