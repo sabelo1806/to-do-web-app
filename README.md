@@ -1,2 +1,2 @@
 # to-do-web-app
-school project
+# live site
